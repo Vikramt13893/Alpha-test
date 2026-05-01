@@ -1,0 +1,352 @@
+openapi: 3.0.3
+info:
+  title: Alpha API
+  description: Advertisement video streaming — JWT auth for uploads and My Space.
+  version: 0.3.0
+servers:
+  - url: http://localhost:8080
+    description: Local Spring Boot
+paths:
+  /api/health:
+    get:
+      summary: Liveness check
+      operationId: getHealth
+      tags: [System]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/auth/register:
+    post:
+      summary: Create account and receive JWT access token
+      operationId: register
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '409':
+          description: Email already registered
+
+  /api/auth/login:
+    post:
+      summary: Sign in and receive JWT access token
+      operationId: login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/videos/trending:
+    get:
+      summary: Trending videos by view score (server-defined window)
+      operationId: listTrendingVideos
+      tags: [Videos]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Ordered list, hottest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendingVideosResponse'
+
+  /api/videos/mine:
+    get:
+      summary: Videos uploaded by the signed-in user
+      operationId: listMyVideos
+      tags: [Videos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Newest uploads first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendingVideosResponse'
+        '401':
+          description: Missing or invalid JWT
+
+  /api/videos:
+    post:
+      summary: Upload a new video file
+      operationId: uploadVideo
+      tags: [Videos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                description:
+                  type: string
+                category:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Video'
+        '400':
+          description: Bad request
+        '401':
+          description: Missing or invalid JWT
+
+  /api/videos/{videoId}:
+    get:
+      summary: Video metadata
+      operationId: getVideoById
+      tags: [Videos]
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Video'
+        '404':
+          description: Not found
+
+  /api/videos/{videoId}/playback-url:
+    get:
+      summary: Short-lived URL to stream the asset (e.g. S3 presigned GET)
+      operationId: getPlaybackUrl
+      tags: [Videos]
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Playback descriptor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaybackUrlResponse'
+        '404':
+          description: Not found
+
+  /api/videos/{videoId}/views:
+    post:
+      summary: Record a view (for trending aggregation)
+      operationId: recordView
+      tags: [Videos]
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordViewRequest'
+      responses:
+        '204':
+          description: Accepted
+
+  /api/ad-slots:
+    get:
+      summary: Side-column ad creatives for the current layout
+      operationId: listAdSlots
+      tags: [Ads]
+      responses:
+        '200':
+          description: Left/right slots (client maps by position)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdSlotsResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Authorization header — Bearer token from /api/auth/login or /api/auth/register
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+
+    Video:
+      type: object
+      required: [id, title, viewCount, durationSeconds, uploadedBy]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        thumbnailUrl:
+          type: string
+          format: uri
+          nullable: true
+        viewCount:
+          type: integer
+          format: int64
+          minimum: 0
+        durationSeconds:
+          type: integer
+          minimum: 1
+        category:
+          type: string
+          nullable: true
+        uploadedBy:
+          type: string
+          description: Uploader account id (UUID string)
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    TokenResponse:
+      type: object
+      required: [accessToken, tokenType, expiresInSeconds, email]
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresInSeconds:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+
+    TrendingVideosResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Video'
+
+    PlaybackUrlResponse:
+      type: object
+      required: [url, expiresAt]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: HLS manifest or MP4 URL
+        expiresAt:
+          type: string
+          format: date-time
+
+    RecordViewRequest:
+      type: object
+      properties:
+        watchSeconds:
+          type: integer
+          minimum: 0
+          description: Optional partial view duration for analytics
+
+    AdSlot:
+      type: object
+      required: [position, contentType, payload]
+      properties:
+        position:
+          type: string
+          enum: [left, right]
+        contentType:
+          type: string
+          enum: [image, html]
+        payload:
+          type: string
+          description: Image URL or escaped HTML fragment
+
+    AdSlotsResponse:
+      type: object
+      required: [slots]
+      properties:
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdSlot'
