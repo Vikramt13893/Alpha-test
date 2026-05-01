@@ -1,9 +1,26 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 
 export default function Header() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, email, logout } = useAuth();
+  const [qInput, setQInput] = useState(() => searchParams.get('q') ?? '');
+
+  useEffect(() => {
+    setQInput(searchParams.get('q') ?? '');
+  }, [searchParams]);
+
+  function onSearchSubmit(e) {
+    e.preventDefault();
+    const next = new URLSearchParams(searchParams);
+    const trimmed = qInput.trim();
+    if (trimmed) next.set('q', trimmed);
+    else next.delete('q');
+    const qs = next.toString();
+    navigate({ pathname: '/', search: qs ? `?${qs}` : '' });
+  }
 
   return (
     <header className="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
@@ -15,19 +32,49 @@ export default function Header() {
             </span>
             Alpha
           </Link>
-          <label className="hidden min-w-0 flex-1 sm:block">
-            <span className="sr-only">Search</span>
+          <form
+            onSubmit={onSearchSubmit}
+            className="hidden min-w-0 flex-1 sm:block"
+            role="search"
+          >
+            <label className="sr-only" htmlFor="global-search">
+              Search videos
+            </label>
             <input
+              id="global-search"
               type="search"
-              placeholder="Search videos…"
-              disabled
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-400 placeholder:text-zinc-600"
+              name="q"
+              placeholder="Search by title…"
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              autoComplete="off"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />
-          </label>
+          </form>
         </div>
         <nav className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="rounded-md px-2 py-1 text-zinc-500">Categories</span>
-          <span className="rounded-md px-2 py-1 text-zinc-500">Settings</span>
+          <NavLink
+            to="/categories"
+            className={({ isActive }) =>
+              [
+                'rounded-md px-2 py-1 transition-colors',
+                isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
+              ].join(' ')
+            }
+          >
+            Categories
+          </NavLink>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              [
+                'rounded-md px-2 py-1 transition-colors',
+                isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
+              ].join(' ')
+            }
+          >
+            Settings
+          </NavLink>
           {isAuthenticated ? (
             <>
               <span className="hidden max-w-[12rem] truncate text-zinc-400 sm:inline" title={email}>
@@ -73,6 +120,20 @@ export default function Header() {
           )}
         </nav>
       </div>
+      <form onSubmit={onSearchSubmit} className="border-t border-zinc-800 px-4 py-2 sm:hidden">
+        <label className="sr-only" htmlFor="global-search-mobile">
+          Search videos
+        </label>
+        <input
+          id="global-search-mobile"
+          type="search"
+          placeholder="Search by title…"
+          value={qInput}
+          onChange={(e) => setQInput(e.target.value)}
+          autoComplete="off"
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+        />
+      </form>
     </header>
   );
 }

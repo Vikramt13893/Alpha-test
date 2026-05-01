@@ -44,6 +44,8 @@ public final class ApiDtos {
 
     public record TrendingVideosResponse(List<Video> items) {}
 
+    public record CategoriesResponse(List<String> items) {}
+
     public record PlaybackUrlResponse(String url, Instant expiresAt) {}
 
     public record RecordViewRequest(Integer watchSeconds) {}

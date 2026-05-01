@@ -72,6 +72,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/videos/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search videos by title and optional category */
+        get: operations["searchVideos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/videos/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Canonical video categories (fixed catalog for upload and filters) */
+        get: operations["listVideoCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/videos/mine": {
         parameters: {
             query?: never;
@@ -218,6 +252,14 @@ export interface components {
         TrendingVideosResponse: {
             items: components["schemas"]["Video"][];
         };
+        CategoriesResponse: {
+            items: components["schemas"]["CanonicalCategory"][];
+        };
+        /**
+         * @description Allowed category labels (must match GET /api/videos/categories exactly)
+         * @enum {string}
+         */
+        CanonicalCategory: "Entertainment" | "Music" | "Movies & Trailers" | "TV Shows / Web Series" | "Gaming" | "Sports" | "News" | "Education / Learning" | "How-To / Tutorials" | "Technology" | "Lifestyle" | "Fashion & Beauty" | "Health & Fitness" | "Food & Cooking" | "Travel" | "Vlogs / Personal" | "Comedy" | "Kids & Family" | "Animation" | "Science" | "Finance / Business" | "Motivation / Self-Improvement" | "Art & Creativity" | "DIY / Crafts" | "Pets & Animals" | "Automotive" | "Real Estate" | "Spirituality / Religion";
         PlaybackUrlResponse: {
             /**
              * Format: uri
@@ -355,6 +397,52 @@ export interface operations {
             };
         };
     };
+    searchVideos: {
+        parameters: {
+            query?: {
+                /** @description Substring match on title (case-insensitive) */
+                q?: string;
+                /** @description Exact category match (case-insensitive) */
+                category?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching videos, same sort as trending */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendingVideosResponse"];
+                };
+            };
+        };
+    };
+    listVideoCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Categories in display order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriesResponse"];
+                };
+            };
+        };
+    };
     listMyVideos: {
         parameters: {
             query?: never;
@@ -396,7 +484,7 @@ export interface operations {
                     file: string;
                     title?: string;
                     description?: string;
-                    category?: string;
+                    category: components["schemas"]["CanonicalCategory"];
                 };
             };
         };

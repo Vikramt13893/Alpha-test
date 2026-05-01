@@ -33,6 +33,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ad-slots").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/videos/trending").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/videos/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/videos/categories").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/videos/mine").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/videos").authenticated()

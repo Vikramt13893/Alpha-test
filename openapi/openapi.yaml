@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Alpha API
   description: Advertisement video streaming — JWT auth for uploads and My Space.
-  version: 0.3.0
+  version: 0.5.0
 servers:
   - url: http://localhost:8080
     description: Local Spring Boot
@@ -83,6 +83,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/TrendingVideosResponse'
 
+  /api/videos/search:
+    get:
+      summary: Search videos by title and optional category
+      operationId: searchVideos
+      tags: [Videos]
+      parameters:
+        - name: q
+          in: query
+          description: Substring match on title (case-insensitive)
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Exact category match (case-insensitive)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Matching videos, same sort as trending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendingVideosResponse'
+
+  /api/videos/categories:
+    get:
+      summary: Canonical video categories (fixed catalog for upload and filters)
+      operationId: listVideoCategories
+      tags: [Videos]
+      responses:
+        '200':
+          description: Categories in display order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesResponse'
+
   /api/videos/mine:
     get:
       summary: Videos uploaded by the signed-in user
@@ -113,7 +157,7 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [file]
+              required: [file, category]
               properties:
                 file:
                   type: string
@@ -123,7 +167,7 @@ paths:
                 description:
                   type: string
                 category:
-                  type: string
+                  $ref: '#/components/schemas/CanonicalCategory'
       responses:
         '201':
           description: Created
@@ -307,6 +351,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Video'
+
+    CategoriesResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CanonicalCategory'
+
+    CanonicalCategory:
+      type: string
+      description: Allowed category labels (must match GET /api/videos/categories exactly)
+      enum:
+        - Entertainment
+        - Music
+        - Movies & Trailers
+        - TV Shows / Web Series
+        - Gaming
+        - Sports
+        - News
+        - Education / Learning
+        - How-To / Tutorials
+        - Technology
+        - Lifestyle
+        - Fashion & Beauty
+        - Health & Fitness
+        - Food & Cooking
+        - Travel
+        - Vlogs / Personal
+        - Comedy
+        - Kids & Family
+        - Animation
+        - Science
+        - Finance / Business
+        - Motivation / Self-Improvement
+        - Art & Creativity
+        - DIY / Crafts
+        - Pets & Animals
+        - Automotive
+        - Real Estate
+        - Spirituality / Religion
 
     PlaybackUrlResponse:
       type: object

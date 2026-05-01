@@ -36,6 +36,23 @@ export async function fetchTrendingVideos(limit = 20) {
   return res.json();
 }
 
+/** @param {{ q?: string, category?: string, limit?: number }} opts */
+export async function searchVideos(opts) {
+  const { q, category, limit = 24 } = opts;
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (q?.trim()) params.set('q', q.trim());
+  if (category?.trim()) params.set('category', category.trim());
+  const res = await fetch(`/api/videos/search?${params}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`search ${res.status}`);
+  return res.json();
+}
+
+export async function fetchCategories() {
+  const res = await fetch('/api/videos/categories', { headers: authHeaders() });
+  if (!res.ok) throw new Error(`categories ${res.status}`);
+  return res.json();
+}
+
 export async function fetchMyVideos() {
   const res = await fetch('/api/videos/mine', { headers: authHeaders() });
   await handleAuthFailure(res);

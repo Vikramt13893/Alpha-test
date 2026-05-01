@@ -1,5 +1,6 @@
 package com.alpha.service;
 
+import com.alpha.domain.CanonicalVideoCategories;
 import com.alpha.domain.VideoEntity;
 import com.alpha.repo.VideoRepository;
 import com.alpha.web.dto.ApiDtos.Video;
@@ -40,6 +41,19 @@ public class VideoService {
     }
 
     @Transactional(readOnly = true)
+    public List<Video> search(String q, String category, int limit) {
+        var page = PageRequest.of(0, Math.min(Math.max(limit, 1), 100));
+        String qq = q != null ? q.trim() : "";
+        String cc = category != null ? category.trim() : "";
+        return videoRepository.searchVideos(qq, cc, page).stream().map(this::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> listCategories() {
+        return CanonicalVideoCategories.ALL;
+    }
+
+    @Transactional(readOnly = true)
     public List<Video> listMine(String userId) {
         return videoRepository.findByUploadedByOrderByCreatedAtDesc(userId)
                 .stream()
@@ -64,6 +78,13 @@ public class VideoService {
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "file required");
         }
+        if (category == null || category.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "category is required");
+        }
+        String normalizedCategory = category.trim();
+        if (!CanonicalVideoCategories.isAllowed(normalizedCategory)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "category must be one of the allowed values");
+        }
         UUID id = UUID.randomUUID();
         String storageKey = videoStorageService.store(file, id);
         Instant now = Instant.now();
@@ -74,7 +95,7 @@ public class VideoService {
                 null,
                 0L,
                 DEFAULT_DURATION_SECONDS,
-                blankToNull(category),
+                normalizedCategory,
                 storageKey,
                 userId,
                 now

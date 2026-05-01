@@ -5,6 +5,7 @@ import com.alpha.service.VideoService;
 import com.alpha.service.VideoStorageService;
 import com.alpha.web.dto.ApiDtos.PlaybackUrlResponse;
 import com.alpha.web.dto.ApiDtos.RecordViewRequest;
+import com.alpha.web.dto.ApiDtos.CategoriesResponse;
 import com.alpha.web.dto.ApiDtos.TrendingVideosResponse;
 import com.alpha.web.dto.ApiDtos.Video;
 import jakarta.validation.constraints.Max;
@@ -56,6 +57,20 @@ public class VideoController {
     @GetMapping("/mine")
     public TrendingVideosResponse listMyVideos(Authentication authentication) {
         return new TrendingVideosResponse(videoService.listMine(requireUserId(authentication)));
+    }
+
+    @GetMapping("/search")
+    public TrendingVideosResponse searchVideos(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        return new TrendingVideosResponse(videoService.search(q, category, limit));
+    }
+
+    @GetMapping("/categories")
+    public CategoriesResponse listCategories() {
+        return new CategoriesResponse(videoService.listCategories());
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
